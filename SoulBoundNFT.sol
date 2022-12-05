@@ -4,13 +4,13 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 
 /// @title A Soulbound NFt
 /// @author Raiyan Mukhtar
 /// @dev Minted Nfts are bound to the minter and are not transferable.
-contract SoulBoundNFT is ERC721Pausable,Ownable{
+contract SoulBoundNFT is ERC721,Ownable{
     using Counters for Counters.Counter; 
     uint256 constant totalSupply = 100;
     Counters.Counter tokenId;
@@ -21,15 +21,15 @@ contract SoulBoundNFT is ERC721Pausable,Ownable{
     constructor ()  ERC721("SoulBound","SB"){}
 
 
-    /// @notice before transfer of tokens it checks if paused
+    /// @dev blocks token transfers that doesnt originate from a zero address
     function _beforeTokenTransfer(
         address from,
         address to,
         uint256 firstTokenId,
         uint256 batchSize
-    ) internal virtual whenNotPaused override {
+    ) internal virtual  override {
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
-
+        require(from == address(0),"Transfers blocked");
     }
 
     /**
@@ -39,9 +39,6 @@ contract SoulBoundNFT is ERC721Pausable,Ownable{
     **/
     function mintNft() public  payable returns(Counters.Counter memory){
 
-        if(paused()){
-            _unpause();
-        }
         require(msg.sender!=address(0),"Zero address");
         require(msg.value>minAmount,"Not Enough eth");
         require(tokenId._value <totalSupply,"All Nfts minted");
@@ -49,8 +46,7 @@ contract SoulBoundNFT is ERC721Pausable,Ownable{
         tokenId.increment();
 
         _safeMint(msg.sender, tokenId._value);
-        
-        _pause();
+    
 
         return tokenId;
     } 
